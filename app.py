@@ -170,6 +170,7 @@ DEFAULTS = {
     "current_scene_idx": 0,
     "mode": "faithful",
     "step": 0,
+    "just_finished": False,
     "processing": False,
     "progress": 0,
     "status_text": "",
@@ -436,6 +437,7 @@ def run_pipeline():
         })
 
         st.session_state.step = 3
+        st.session_state.just_finished = True
         time.sleep(1)
         st.rerun()
 
@@ -636,6 +638,14 @@ def main():
     render_sidebar()
 
     st.sidebar.markdown("---")
+
+    # 生成完成后自动跳到预览页
+    if st.session_state.get("just_finished"):
+        st.session_state.just_finished = False
+        st.sidebar.success("✅ 剧本已生成")
+        page_results()
+        return
+
     menu = st.sidebar.radio(
         "📍 导航",
         ["🏠 首页", "🎬 剧本预览", "📥 下载中心"],
