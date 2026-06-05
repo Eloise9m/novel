@@ -1,6 +1,6 @@
 # AI Novel To Script - AI小说转剧本工具
 
-将小说自动转换为标准影视剧本（YAML格式），基于 DeepSeek 大语言模型。
+将小说自动转换为标准影视剧本（YAML格式），基于火山引擎豆包(Doubao)大语言模型，每日免费50万token。
 
 ## 功能
 
@@ -28,7 +28,7 @@ streamlit run app.py
 
 ## 使用步骤
 
-1. 在侧边栏输入 DeepSeek API Key
+1. 在侧边栏输入豆包 API Key
 2. 选择改编模式
 3. 上传小说文件或粘贴文本
 4. 点击"开始生成剧本"
@@ -51,7 +51,7 @@ streamlit run app.py
 
 ## 获取 API Key
 
-在 https://platform.deepseek.com 注册并获取 API Key。
+在 https://console.volcengine.com/ark 注册火山引擎账号，创建API Key即可使用（doubao-lite-128k模型每日免费50万token）。
 
 ## YAML 剧本格式
 

@@ -1,4 +1,4 @@
-"""AI生成模块 - 调用DeepSeek API进行各项AI分析"""
+"""AI生成模块 - 调用豆包(Doubao) API进行各项AI分析"""
 
 import json
 import logging
@@ -19,18 +19,18 @@ from .parser import safe_json_parse
 
 logger = logging.getLogger(__name__)
 
-DEEPSEEK_BASE = "https://api.deepseek.com"
-DEEPSEEK_MODEL = "deepseek-chat"
+DOUBAO_BASE = "https://ark.cn-beijing.volces.com/api/v3"
+DOUBAO_MODEL = "doubao-lite-128k"  # 免费额度: 50万token/天
 
 
 def _get_client(api_key: str) -> OpenAI:
-    return OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE)
+    return OpenAI(api_key=api_key, base_url=DOUBAO_BASE)
 
 
-def _call_deepseek(client: OpenAI, system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
-    """调用DeepSeek API"""
+def _call_api(client: OpenAI, system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
+    """调用豆包API"""
     resp = client.chat.completions.create(
-        model=DEEPSEEK_MODEL,
+        model=DOUBAO_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -46,7 +46,7 @@ def extract_characters(api_key: str, text: str) -> dict[str, Any]:
     client = _get_client(api_key)
     # 只取前8000字用于人物识别
     truncated = text[:8000] if len(text) > 8000 else text
-    result = _call_deepseek(
+    result = _call_api(
         client,
         "你是一个专业的小说人物分析助手。请严格按照JSON格式返回结果。",
         CHARACTER_EXTRACT_PROMPT.format(text=truncated),
@@ -59,7 +59,7 @@ def extract_scenes(api_key: str, chapter_text: str, chapter_title: str) -> dict[
     """从章节文本中提取场景"""
     client = _get_client(api_key)
     truncated = chapter_text[:6000] if len(chapter_text) > 6000 else chapter_text
-    result = _call_deepseek(
+    result = _call_api(
         client,
         "你是一个专业的影视场景分析助手。请严格按照JSON格式返回结果。",
         SCENE_EXTRACT_PROMPT.format(text=f"【{chapter_title}】\n{truncated}"),
@@ -72,7 +72,7 @@ def extract_dialogues_and_actions(api_key: str, scene_text: str, characters: lis
     """从场景文本中提取对白和动作"""
     client = _get_client(api_key)
     truncated = scene_text[:4000] if len(scene_text) > 4000 else scene_text
-    result = _call_deepseek(
+    result = _call_api(
         client,
         "你是一个专业的剧本分析助手。请严格按照JSON格式返回结果。",
         DIALOGUE_ACTION_PROMPT.format(text=truncated, characters=", ".join(characters)),
@@ -85,7 +85,7 @@ def extract_relations(api_key: str, text: str, characters: list[str]) -> dict[st
     """分析人物关系"""
     client = _get_client(api_key)
     truncated = text[:8000] if len(text) > 8000 else text
-    result = _call_deepseek(
+    result = _call_api(
         client,
         "你是一个专业的人物关系分析助手。请严格按照JSON格式返回结果。",
         RELATION_EXTRACT_PROMPT.format(text=truncated, characters=json.dumps(characters, ensure_ascii=False)),
@@ -98,7 +98,7 @@ def generate_summary(api_key: str, text: str) -> str:
     """生成剧情摘要"""
     client = _get_client(api_key)
     truncated = text[:10000] if len(text) > 10000 else text
-    result = _call_deepseek(
+    result = _call_api(
         client,
         "你是一个专业的小说编辑。请简洁地总结小说剧情。",
         SUMMARY_PROMPT.format(text=truncated),
@@ -113,7 +113,7 @@ def generate_script(api_key: str, chapter_text: str, chapter_title: str,
     client = _get_client(api_key)
     prompt_template = SCRIPT_GENERATE_PROMPTS.get(mode, SCRIPT_GENERATE_PROMPTS["faithful"])
     truncated = chapter_text[:6000] if len(chapter_text) > 6000 else chapter_text
-    result = _call_deepseek(
+    result = _call_api(
         client,
         "你是一个专业的影视编剧。请严格按照JSON格式返回结果。",
         prompt_template.format(
@@ -129,7 +129,7 @@ def regenerate_scene(api_key: str, original_scene: dict[str, Any], mode: str = "
     """重新生成单个场景的对白和动作"""
     client = _get_client(api_key)
     prompt_tmpl = SCRIPT_GENERATE_PROMPTS.get(mode, SCRIPT_GENERATE_PROMPTS["faithful"])
-    result = _call_deepseek(
+    result = _call_api(
         client,
         "你是一个专业的影视编剧。请严格按照JSON格式返回结果。",
         SCENE_REGENERATE_PROMPT.format(

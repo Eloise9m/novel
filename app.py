@@ -64,11 +64,11 @@ def render_sidebar():
 
         st.markdown("### API 设置")
         api_key = st.text_input(
-            "DeepSeek API Key",
+            "豆包 API Key",
             type="password",
             value=st.session_state.api_key,
             placeholder="sk-...",
-            help="在 https://platform.deepseek.com 获取",
+            help="在 https://console.volcengine.com/ark 获取（每日免费50万token）",
         )
         if api_key != st.session_state.api_key:
             st.session_state.api_key = api_key
@@ -114,7 +114,7 @@ def page_home():
     with col1:
         st.metric("支持格式", "TXT / DOCX")
     with col2:
-        st.metric("AI引擎", "DeepSeek")
+        st.metric("AI引擎", "豆包 (免费)")
     with col3:
         st.metric("输出格式", "YAML / JSON")
 
@@ -183,7 +183,7 @@ def page_home():
 
         if st.button("开始生成剧本", type="primary", use_container_width=True, disabled=st.session_state.processing):
             if not st.session_state.api_key:
-                st.error("请先在侧边栏输入 DeepSeek API Key")
+                st.error("请先在侧边栏输入豆包 API Key")
             else:
                 run_pipeline()
 
@@ -525,7 +525,7 @@ def main():
 
     st.sidebar.markdown("---")
     st.sidebar.caption("AI Novel To Script v1.0")
-    st.sidebar.caption("Powered by DeepSeek")
+    st.sidebar.caption("Powered by 豆包 (Doubao)")
 
 
 if __name__ == "__main__":
