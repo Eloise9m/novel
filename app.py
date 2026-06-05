@@ -281,49 +281,60 @@ def page_home():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 上传区域
-    tab1, tab2 = st.tabs(["📤 上传文件", "📝 粘贴文本"])
+    # 上传区域 / 已加载状态
+    if st.session_state.novel_text:
+        # 已加载小说，显示状态而非上传区
+        st.success(f"📖 已加载：《{st.session_state.novel_title}》（{len(st.session_state.novel_text)} 字）")
+        if st.button("🔄 更换小说", type="secondary"):
+            st.session_state.novel_text = ""
+            st.session_state.novel_title = ""
+            st.session_state.step = 0
+            st.rerun()
+    else:
+        tab1, tab2 = st.tabs(["📤 上传文件", "📝 粘贴文本"])
 
-    with tab1:
-        uploaded_file = st.file_uploader(
-            "选择小说文件",
-            type=["txt", "docx"],
-            help="支持TXT和DOCX格式",
-        )
-        if uploaded_file is not None:
-            if uploaded_file.size > 2 * 1024 * 1024:
-                st.warning("文件较大（>2MB），建议使用章节较少的小说")
+        with tab1:
+            uploaded_file = st.file_uploader(
+                "选择小说文件",
+                type=["txt", "docx"],
+                help="支持TXT和DOCX格式",
+            )
+            if uploaded_file is not None:
+                if uploaded_file.size > 2 * 1024 * 1024:
+                    st.warning("文件较大（>2MB），建议使用章节较少的小说")
 
-            if st.button("📖 读取文件", type="primary", use_container_width=True):
-                with st.spinner("读取文件中..."):
-                    try:
-                        temp_path = os.path.join("uploads", uploaded_file.name)
-                        with open(temp_path, "wb") as f:
-                            f.write(uploaded_file.getbuffer())
-                        if uploaded_file.name.endswith(".docx"):
-                            text = parse_docx(temp_path)
-                        else:
-                            text = parse_txt(temp_path)
-                        st.session_state.novel_text = text
-                        st.session_state.novel_title = os.path.splitext(uploaded_file.name)[0]
-                        st.success(f"读取成功: {uploaded_file.name} ({len(text)} 字)")
-                    except Exception as e:
-                        st.error(f"读取失败: {e}")
+                if st.button("📖 读取文件", type="primary", use_container_width=True):
+                    with st.spinner("读取文件中..."):
+                        try:
+                            temp_path = os.path.join("uploads", uploaded_file.name)
+                            with open(temp_path, "wb") as f:
+                                f.write(uploaded_file.getbuffer())
+                            if uploaded_file.name.endswith(".docx"):
+                                text = parse_docx(temp_path)
+                            else:
+                                text = parse_txt(temp_path)
+                            st.session_state.novel_text = text
+                            st.session_state.novel_title = os.path.splitext(uploaded_file.name)[0]
+                            st.success(f"读取成功: {uploaded_file.name} ({len(text)} 字)")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"读取失败: {e}")
 
-    with tab2:
-        novel_title = st.text_input("小说标题", placeholder="输入小说标题")
-        pasted_text = st.text_area(
-            "粘贴小说内容",
-            height=300,
-            placeholder="请粘贴小说全文...",
-        )
-        if st.button("✅ 确认提交", type="primary", use_container_width=True):
-            if len(pasted_text.strip()) < 100:
-                st.warning("文本内容过短")
-            else:
-                st.session_state.novel_text = pasted_text.strip()
-                st.session_state.novel_title = novel_title or "未命名小说"
-                st.success(f"文本已提交 ({len(pasted_text)} 字)")
+        with tab2:
+            novel_title = st.text_input("小说标题", placeholder="输入小说标题")
+            pasted_text = st.text_area(
+                "粘贴小说内容",
+                height=300,
+                placeholder="请粘贴小说全文...",
+            )
+            if st.button("✅ 确认提交", type="primary", use_container_width=True):
+                if len(pasted_text.strip()) < 100:
+                    st.warning("文本内容过短")
+                else:
+                    st.session_state.novel_text = pasted_text.strip()
+                    st.session_state.novel_title = novel_title or "未命名小说"
+                    st.success(f"文本已提交 ({len(pasted_text)} 字)")
+                    st.rerun()
 
     # 小说就绪
     if st.session_state.novel_text:
