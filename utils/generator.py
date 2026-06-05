@@ -20,7 +20,7 @@ from .parser import safe_json_parse
 logger = logging.getLogger(__name__)
 
 DOUBAO_BASE = "https://ark.cn-beijing.volces.com/api/v3"
-DOUBAO_MODEL = "doubao-lite-128k"  # 免费额度: 50万token/天
+DOUBAO_MODEL = "doubao-1.5-lite-32k-250115"  # 免费额度: 需先在Ark控制台开通
 
 
 def _get_client(api_key: str) -> OpenAI:
