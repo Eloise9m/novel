@@ -158,6 +158,15 @@ def render_sidebar():
     with st.sidebar:
         st.markdown("## 🎬 Novel To Script")
 
+        # 导航放最上面
+        menu = st.radio(
+            "页面",
+            ["🏠 首页", "🎬 剧本预览", "📥 下载"],
+            key="_nav",
+            label_visibility="collapsed",
+        )
+        st.markdown("---")
+
         remaining = trials_remaining()
         if remaining > 0:
             st.success(f"⚡ 免费试用剩余 **{remaining}/{MAX_FREE_TRIALS}** 次")
@@ -175,10 +184,10 @@ def render_sidebar():
         st.markdown("---")
 
         # 生成模式
-        st.markdown("#### 🎭 改编模式")
+        st.caption("🎭 改编模式")
         prev_mode = st.session_state.mode
         mode = st.radio(
-            "选择模式",
+            "模式",
             options=list(MODE_LABELS.keys()),
             format_func=lambda x: MODE_LABELS[x],
             index=list(MODE_LABELS.keys()).index(st.session_state.mode),
@@ -186,13 +195,12 @@ def render_sidebar():
             label_visibility="collapsed",
         )
         st.session_state.mode = mode
-        st.caption(f"✨ {MODE_LABELS.get(mode, '')}")
         if mode != prev_mode and st.session_state.novel_text and not st.session_state.processing:
             st.session_state.trigger_generate = True
 
         st.markdown("---")
 
-        # 核心操作按钮
+        # 核心操作
         if st.session_state.novel_text and not st.session_state.processing:
             if st.button("🚀 生成剧本", type="primary", use_container_width=True):
                 active_key = get_active_key()
@@ -207,18 +215,8 @@ def render_sidebar():
 
         st.markdown("---")
 
-        # 导航
-        menu = st.radio(
-            "📍 页面",
-            ["🏠 首页", "🎬 剧本预览", "📥 下载"],
-            key="_nav",
-            label_visibility="collapsed",
-        )
-
-        st.markdown("---")
-
         # 历史记录
-        st.markdown("#### 📜 历史记录")
+        st.caption("📜 历史记录")
         history = load_history()
         if not history:
             st.caption("暂无")
