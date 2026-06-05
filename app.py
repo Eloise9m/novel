@@ -5,14 +5,13 @@ import json
 import time
 import logging
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import streamlit as st
 
 from utils.parser import split_chapters, parse_chapter_list, parse_docx, parse_txt, safe_json_parse
 from utils.generator import (
     extract_characters,
-    extract_scenes,
-    extract_dialogues_and_actions,
     extract_relations,
     generate_summary,
     generate_script,
@@ -360,65 +359,71 @@ def run_pipeline():
     status_area = st.empty()
 
     try:
-        status_area.info("步骤 1/5: 解析章节...")
+        # 步骤1: 解析章节
+        status_area.info("步骤 1/3: 解析章节...")
         chapters = split_chapters(text)
         st.session_state.chapters = chapters
-        progress_bar.progress(20)
+        progress_bar.progress(10)
 
-        status_area.info("步骤 2/5: AI识别角色人物...")
-        char_result = extract_characters(api_key, text)
-        characters = char_result.get("characters", [])
-        st.session_state.characters = characters
-        progress_bar.progress(40)
+        # 步骤2: 并行执行人物提取 + 关系分析 + 摘要
+        status_area.info(f"步骤 2/3: AI分析中（人物识别 + 关系分析 + 摘要）...")
 
-        status_area.info("步骤 3/5: AI分析人物关系...")
-        char_names = [c.get("name", "") for c in characters if c.get("name")]
-        rel_result = extract_relations(api_key, text, char_names)
-        st.session_state.relations = rel_result.get("relations", [])
-        progress_bar.progress(55)
+        def do_characters():
+            return extract_characters(api_key, text)
+        def do_relations(char_names):
+            return extract_relations(api_key, text, char_names)
+        def do_summary():
+            return generate_summary(api_key, text)
 
-        status_area.info("生成剧情摘要...")
-        summary = generate_summary(api_key, text)
-        st.session_state.summary = summary
-        progress_bar.progress(65)
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            fut_chars = pool.submit(do_characters)
+            fut_summary = pool.submit(do_summary)
 
-        for i, ch in enumerate(chapters):
-            status_area.info(f"步骤 4/5: 正在生成第{i + 1}/{len(chapters)}章剧本...")
+            char_result = fut_chars.result()
+            characters = char_result.get("characters", [])
+            st.session_state.characters = characters
+            char_names = [c.get("name", "") for c in characters if c.get("name")]
 
-            if mode == "faithful":
-                scene_result = extract_scenes(api_key, ch["content"], ch["chapter_title"])
-                scenes = scene_result.get("scenes", [])
-                for scene in scenes:
-                    scene_chars = scene.get("characters", [])
-                    dialogue_text = "\n".join([
-                        f"{a.get('actor', '')}{a.get('content', '')}"
-                        for a in scene.get("actions", [])
-                    ])
-                    if not dialogue_text.strip():
-                        dialogue_text = ch["content"][:2000]
-                    da_result = extract_dialogues_and_actions(api_key, dialogue_text, scene_chars)
-                    scene["actions"] = da_result.get("actions", [])
-                    scene["dialogues"] = da_result.get("dialogues", [])
-                    scene["chapter"] = ch["chapter_title"]
-                    st.session_state.all_scenes.append(scene)
-            else:
-                script_result = generate_script(
-                    api_key, ch["content"], ch["chapter_title"],
-                    char_names, mode,
-                )
-                scenes = script_result.get("scenes", [])
-                for scene in scenes:
-                    scene["chapter"] = ch["chapter_title"]
-                    st.session_state.all_scenes.append(scene)
+            fut_rels = pool.submit(do_relations, char_names)
+            summary = fut_summary.result()
+            st.session_state.summary = summary
+            rel_result = fut_rels.result()
+            st.session_state.relations = rel_result.get("relations", [])
 
-            progress_bar.progress(65 + int(30 * (i + 1) / len(chapters)))
-            time.sleep(0.3)
+        progress_bar.progress(30)
+
+        # 步骤3: 并行生成所有章节剧本
+        total = len(chapters)
+
+        def process_chapter(idx_ch):
+            i, ch = idx_ch
+            script_result = generate_script(
+                api_key, ch["content"], ch["chapter_title"],
+                char_names, mode,
+            )
+            scenes = script_result.get("scenes", [])
+            for scene in scenes:
+                scene["chapter"] = ch["chapter_title"]
+                scene["_chapter_idx"] = i
+            return scenes
+
+        with ThreadPoolExecutor(max_workers=min(4, total)) as pool:
+            futures = {pool.submit(process_chapter, (i, ch)): i for i, ch in enumerate(chapters)}
+            completed = 0
+            for fut in as_completed(futures):
+                scenes = fut.result()
+                st.session_state.all_scenes.extend(scenes)
+                completed += 1
+                status_area.info(f"步骤 3/3: 生成剧本 {completed}/{total} 章")
+                progress_bar.progress(30 + int(65 * completed / total))
+
+        # 按章节顺序排列场景
+        st.session_state.all_scenes.sort(key=lambda s: (s.get("_chapter_idx", 0), s.get("scene_id", 0)))
 
         progress_bar.progress(100)
         scene_count = len(st.session_state.all_scenes)
         status_area.success(f"剧本生成完成！共 {scene_count} 个场景")
 
-        # 保存历史记录
         save_history_entry({
             "title": st.session_state.novel_title,
             "date": datetime.now().isoformat(),
