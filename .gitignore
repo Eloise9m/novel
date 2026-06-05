@@ -18,6 +18,9 @@ env/
 # Streamlit
 .streamlit/secrets.toml
 
+# Free trial counter
+free_trials.json
+
 # Runtime output
 outputs/*
 !outputs/.gitkeep

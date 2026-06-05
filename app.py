@@ -1,6 +1,7 @@
 """AI Novel To Script - AI小说转剧本工具"""
 
 import os
+import json
 import time
 import logging
 
@@ -21,6 +22,45 @@ from utils.yaml_export import ScriptYAML, build_script_from_chapters
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+TRIAL_FILE = os.path.join(os.path.dirname(__file__), "free_trials.json")
+MAX_FREE_TRIALS = 5
+
+
+def _read_trials():
+    try:
+        with open(TRIAL_FILE) as f:
+            return json.load(f).get("used", 0)
+    except Exception:
+        return 0
+
+
+def _write_trials(count):
+    with open(TRIAL_FILE, "w") as f:
+        json.dump({"used": count}, f)
+
+
+def trials_remaining():
+    return max(0, MAX_FREE_TRIALS - _read_trials())
+
+
+def use_trial():
+    _write_trials(_read_trials() + 1)
+
+
+def get_builtin_key():
+    try:
+        return st.secrets["DOUBAO_API_KEY"]
+    except Exception:
+        return ""
+
+
+def get_active_key():
+    """返回当前有效的API Key（优先免费试用，其次用户自己的）"""
+    if trials_remaining() > 0:
+        return get_builtin_key()
+    return st.session_state.get("user_api_key", "")
+
+
 st.set_page_config(
     page_title="AI Novel To Script",
     page_icon="",
@@ -30,7 +70,7 @@ st.set_page_config(
 
 # ---- 初始化 Session State ----
 DEFAULTS = {
-    "api_key": "",
+    "user_api_key": "",  # 用户自己的Key（免费次数用完后才需要）
     "novel_text": "",
     "novel_title": "",
     "chapters": [],
@@ -62,16 +102,23 @@ def render_sidebar():
         st.title("AI Novel To Script")
         st.markdown("---")
 
-        st.markdown("### API 设置")
-        api_key = st.text_input(
-            "豆包 API Key",
-            type="password",
-            value=st.session_state.api_key,
-            placeholder="sk-...",
-            help="在 https://console.volcengine.com/ark 获取（每日免费50万token）",
-        )
-        if api_key != st.session_state.api_key:
-            st.session_state.api_key = api_key
+        remaining = trials_remaining()
+        if remaining > 0:
+            st.markdown("### 免费试用")
+            st.success(f"剩余免费次数: **{remaining}/{MAX_FREE_TRIALS}**")
+            st.caption("免费次数用完后，需要输入你自己的豆包 API Key")
+        else:
+            st.markdown("### API 设置")
+            st.warning("免费次数已用完，请使用自己的 API Key")
+            user_key = st.text_input(
+                "豆包 API Key",
+                type="password",
+                value=st.session_state.user_api_key,
+                placeholder="输入你的API Key...",
+                help="在 https://console.volcengine.com/ark 获取（每日免费50万token）",
+            )
+            if user_key != st.session_state.user_api_key:
+                st.session_state.user_api_key = user_key
 
         st.markdown("---")
 
@@ -182,8 +229,9 @@ def page_home():
                 st.write(f"第{ch['chapter_index']}章: {ch['chapter_title']}")
 
         if st.button("开始生成剧本", type="primary", use_container_width=True, disabled=st.session_state.processing):
-            if not st.session_state.api_key:
-                st.error("请先在侧边栏输入豆包 API Key")
+            active_key = get_active_key()
+            if not active_key:
+                st.error("免费次数已用完，请在侧边栏输入你自己的豆包 API Key")
             else:
                 run_pipeline()
 
@@ -196,8 +244,11 @@ def run_pipeline():
     st.session_state.step = 0
 
     text = st.session_state.novel_text
-    api_key = st.session_state.api_key
+    api_key = get_active_key()
     mode = st.session_state.mode
+
+    if trials_remaining() > 0:
+        use_trial()
 
     progress_bar = st.progress(0)
     status_area = st.empty()
@@ -402,11 +453,12 @@ def render_scenes_tab():
     col_btn1, col_btn2 = st.columns([1, 4])
     with col_btn1:
         if st.button("重新生成当前场景", type="secondary", use_container_width=True):
-            if st.session_state.api_key:
+            active_key = get_active_key()
+            if active_key:
                 with st.spinner("AI重新编写中..."):
                     try:
                         new_content = regenerate_scene(
-                            st.session_state.api_key,
+                            active_key,
                             scene,
                             st.session_state.mode,
                         )
