@@ -286,7 +286,7 @@ def page_home():
 
     with tab1:
         uploaded_file = st.file_uploader(
-            "选择小说文件（至少包含3章）",
+            "选择小说文件",
             type=["txt", "docx"],
             help="支持TXT和DOCX格式",
         )
@@ -315,11 +315,11 @@ def page_home():
         pasted_text = st.text_area(
             "粘贴小说内容",
             height=300,
-            placeholder="请粘贴小说全文（至少包含3章内容）...",
+            placeholder="请粘贴小说全文...",
         )
         if st.button("✅ 确认提交", type="primary", use_container_width=True):
-            if len(pasted_text.strip()) < 500:
-                st.warning("文本内容过短，请至少粘贴3章以上的内容")
+            if len(pasted_text.strip()) < 100:
+                st.warning("文本内容过短")
             else:
                 st.session_state.novel_text = pasted_text.strip()
                 st.session_state.novel_title = novel_title or "未命名小说"
