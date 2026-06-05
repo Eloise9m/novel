@@ -21,6 +21,9 @@ env/
 # Free trial counter
 free_trials.json
 
+# History
+history.json
+
 # Runtime output
 outputs/*
 !outputs/.gitkeep
