@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any
 
+import httpx
 from openai import OpenAI
 
 from .prompt import (
@@ -24,7 +25,8 @@ DOUBAO_MODEL = "ep-m-20260605150614-lq69r"
 
 
 def _get_client(api_key: str) -> OpenAI:
-    return OpenAI(api_key=api_key, base_url=DOUBAO_BASE)
+    http_client = httpx.Client(proxy=None, timeout=60.0)
+    return OpenAI(api_key=api_key, base_url=DOUBAO_BASE, http_client=http_client)
 
 
 def _call_api(client: OpenAI, system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
