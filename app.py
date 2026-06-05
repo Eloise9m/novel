@@ -17,7 +17,7 @@ from utils.generator import (
     generate_script,
     regenerate_scene,
 )
-from utils.yaml_export import ScriptYAML, build_script_from_chapters
+from utils.yaml_export import ScriptYAML, build_script_from_chapters, scenes_to_script_text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -455,7 +455,7 @@ def page_results():
         with st.expander("📖 剧情摘要", expanded=False):
             st.write(st.session_state.summary)
 
-    tabs = st.tabs(["🎭 人物角色", "🕸️ 角色关系", "📜 场景剧本", "📄 YAML预览"])
+    tabs = st.tabs(["🎭 人物角色", "🕸️ 角色关系", "📜 场景剧本", "📝 传统剧本", "📄 YAML预览"])
 
     with tabs[0]:
         render_characters_tab()
@@ -464,6 +464,8 @@ def page_results():
     with tabs[2]:
         render_scenes_tab()
     with tabs[3]:
+        render_script_text_tab()
+    with tabs[4]:
         render_yaml_preview_tab()
 
 def render_characters_tab():
@@ -558,6 +560,22 @@ def render_scenes_tab():
                 except Exception as e:
                     st.error(f"重新生成失败: {e}")
 
+def render_script_text_tab():
+    """传统剧本格式标签页"""
+    if not st.session_state.all_scenes:
+        st.info("暂无剧本数据")
+        return
+    script_text = scenes_to_script_text(st.session_state.novel_title, st.session_state.all_scenes)
+    st.markdown("#### 传统剧本格式 (人名：台词)")
+    st.text_area("剧本内容", script_text, height=500, key="script_text_area")
+    st.download_button(
+        label="⬇ 下载 TXT 剧本",
+        data=script_text,
+        file_name=f"{st.session_state.novel_title}.txt",
+        mime="text/plain",
+        type="primary",
+    )
+
 def render_yaml_preview_tab():
     if not st.session_state.all_scenes:
         st.info("暂无剧本数据")
@@ -586,9 +604,23 @@ def page_download():
     )
 
     st.markdown("### 剧本文件下载")
-    c1, c2 = st.columns(2)
+    c1, c2, c3 = st.columns(3)
+
+    script_text = scenes_to_script_text(st.session_state.novel_title, st.session_state.all_scenes)
 
     with c1:
+        st.markdown("#### 📝 TXT 剧本")
+        st.download_button(
+            label="⬇ 下载 TXT 剧本",
+            data=script_text,
+            file_name=f"{st.session_state.novel_title}.txt",
+            mime="text/plain",
+            type="primary",
+            use_container_width=True,
+        )
+        st.caption("传统格式：人名：台词")
+
+    with c2:
         st.markdown("#### 📄 YAML 格式")
         yaml_content = script.to_yaml()
         st.download_button(
@@ -602,7 +634,7 @@ def page_download():
         with st.expander("预览"):
             st.code(yaml_content[:3000], language="yaml")
 
-    with c2:
+    with c3:
         st.markdown("#### 📦 JSON 格式")
         json_content = script.to_json()
         st.download_button(

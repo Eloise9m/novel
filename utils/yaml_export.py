@@ -81,6 +81,37 @@ class ScriptYAML:
             f.write(self.to_json())
 
 
+def scenes_to_script_text(title: str, scenes: list[dict[str, Any]]) -> str:
+    """将场景列表转换为传统剧本格式文本"""
+    lines = []
+    lines.append(f"《{title}》")
+    lines.append("=" * 40)
+    lines.append("")
+
+    for s in scenes:
+        sid = s.get("scene_id", "?")
+        loc = s.get("location", "未知")
+        time_str = s.get("time", "")
+        emotion = s.get("emotion", "")
+
+        lines.append(f"第{sid}场 | {loc} | {time_str} | {emotion}")
+        lines.append("-" * 36)
+
+        for a in s.get("actions", []):
+            actor = a.get("actor", "")
+            content = a.get("content", "")
+            lines.append(f"  【{actor} {content}】")
+
+        for d in s.get("dialogues", []):
+            speaker = d.get("speaker", "?")
+            content = d.get("content", "")
+            lines.append(f"  {speaker}：{content}")
+
+        lines.append("")
+
+    return "\n".join(lines)
+
+
 def build_script_from_chapters(title: str, summary: str, characters: list[dict[str, Any]],
                                 relations: list[dict[str, Any]],
                                 all_scenes: list[dict[str, Any]]) -> ScriptYAML:
