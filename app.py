@@ -461,6 +461,7 @@ def run_pipeline():
 
         st.session_state.step = 3
         st.session_state.just_finished = True
+        st.session_state.processing = False
         time.sleep(1)
         st.rerun()
 
