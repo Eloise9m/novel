@@ -4,7 +4,7 @@
 
 ## 在线使用（推荐）
 
-👉 **[点击这里打开](https://share.streamlit.io)** ← 部署后替换为实际链接
+👉 **[点击这里打开](https://eloise9m-novel-app-bg234h.streamlit.app/)**
 
 打开浏览器就能用，无需安装任何东西。
 
