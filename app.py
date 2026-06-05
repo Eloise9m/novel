@@ -106,12 +106,12 @@ def render_sidebar():
         if remaining > 0:
             st.markdown("### 免费试用")
             st.success(f"剩余免费次数: **{remaining}/{MAX_FREE_TRIALS}**")
-            st.caption("免费次数用完后，需要输入你自己的豆包 API Key")
+            st.caption("免费次数用完后，需要输入你自己的 API Key")
         else:
             st.markdown("### API 设置")
             st.warning("免费次数已用完，请使用自己的 API Key")
             user_key = st.text_input(
-                "豆包 API Key",
+                "API Key",
                 type="password",
                 value=st.session_state.user_api_key,
                 placeholder="输入你的API Key...",
@@ -161,7 +161,7 @@ def page_home():
     with col1:
         st.metric("支持格式", "TXT / DOCX")
     with col2:
-        st.metric("AI引擎", "豆包 (免费)")
+        st.metric("AI引擎", "大模型 (免费)")
     with col3:
         st.metric("输出格式", "YAML / JSON")
 
@@ -231,7 +231,7 @@ def page_home():
         if st.button("开始生成剧本", type="primary", use_container_width=True, disabled=st.session_state.processing):
             active_key = get_active_key()
             if not active_key:
-                st.error("免费次数已用完，请在侧边栏输入你自己的豆包 API Key")
+                st.error("免费次数已用完，请在侧边栏输入你自己的 API Key")
             else:
                 run_pipeline()
 
@@ -577,7 +577,7 @@ def main():
 
     st.sidebar.markdown("---")
     st.sidebar.caption("AI Novel To Script v1.0")
-    st.sidebar.caption("Powered by 豆包 (Doubao)")
+    st.sidebar.caption("Powered by AI")
 
 
 if __name__ == "__main__":

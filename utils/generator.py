@@ -1,4 +1,4 @@
-"""AI生成模块 - 调用豆包(Doubao) API进行各项AI分析"""
+"""AI生成模块 - 调用大模型API进行各项AI分析"""
 
 import json
 import logging
@@ -28,7 +28,7 @@ def _get_client(api_key: str) -> OpenAI:
 
 
 def _call_api(client: OpenAI, system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
-    """调用豆包API"""
+    """调用大模型API"""
     resp = client.chat.completions.create(
         model=DOUBAO_MODEL,
         messages=[
