@@ -171,6 +171,7 @@ DEFAULTS = {
     "mode": "faithful",
     "step": 0,
     "just_finished": False,
+    "trigger_generate": False,
     "processing": False,
     "progress": 0,
     "status_text": "",
@@ -215,13 +216,17 @@ def render_sidebar():
             "dialogue_enhanced": "对话增强",
             "stage_play": "舞台剧模式",
         }
+        prev_mode = st.session_state.mode
         mode = st.radio(
             "选择改编模式",
             options=list(mode_labels.keys()),
             format_func=lambda x: mode_labels[x],
             index=list(mode_labels.keys()).index(st.session_state.mode),
+            key="_mode_radio",
         )
         st.session_state.mode = mode
+        if mode != prev_mode and st.session_state.novel_text and not st.session_state.processing:
+            st.session_state.trigger_generate = True
         st.caption(f"✨ {mode_labels.get(mode, '')}")
 
         st.markdown("---")
@@ -335,6 +340,13 @@ def page_home():
                     st.session_state.novel_title = novel_title or "未命名小说"
                     st.success(f"文本已提交 ({len(pasted_text)} 字)")
                     st.rerun()
+
+    # 模式切换触发自动生成
+    if st.session_state.get("trigger_generate") and st.session_state.novel_text:
+        st.session_state.trigger_generate = False
+        active_key = get_active_key()
+        if active_key:
+            run_pipeline()
 
     # 小说就绪
     if st.session_state.novel_text:
