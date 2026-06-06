@@ -16,6 +16,7 @@ from utils.generator import (
     generate_summary,
     generate_script,
     regenerate_scene,
+    PROVIDERS,
 )
 from utils.yaml_export import ScriptYAML, build_script_from_chapters, scenes_to_script_text
 
@@ -134,6 +135,7 @@ st.set_page_config(
 
 DEFAULTS = {
     "user_api_key": "",
+    "provider": "doubao",
     "novel_text": "",
     "novel_title": "",
     "chapters": [],
@@ -183,6 +185,15 @@ def render_sidebar():
         )
         if user_key != st.session_state.user_api_key:
             st.session_state.user_api_key = user_key
+
+        provider_options = list(PROVIDERS.keys())
+        provider_idx = provider_options.index(st.session_state.provider) if st.session_state.provider in provider_options else 0
+        st.session_state.provider = st.selectbox(
+            "🤖 API 服务商",
+            options=provider_options,
+            format_func=lambda x: PROVIDERS[x]["name"],
+            index=provider_idx,
+        )
 
         st.markdown("---")
 
@@ -335,8 +346,12 @@ def run_pipeline():
     text = st.session_state.novel_text
     api_key = get_active_key()
     mode = st.session_state.mode
+    provider = st.session_state.get("provider", "doubao")
+    provider_cfg = PROVIDERS.get(provider, PROVIDERS["doubao"])
+    base_url = provider_cfg["base_url"]
+    model = provider_cfg["model"]
 
-    if trials_remaining() > 0:
+    if trials_remaining() > 0 and not st.session_state.get("user_api_key", ""):
         use_trial()
 
     progress_bar = st.progress(0)
@@ -351,11 +366,11 @@ def run_pipeline():
         status_area.info("步骤 2/3: AI 分析中...")
 
         def do_characters():
-            return extract_characters(api_key, text)
+            return extract_characters(api_key, text, base_url=base_url, model=model)
         def do_relations(char_names):
-            return extract_relations(api_key, text, char_names)
+            return extract_relations(api_key, text, char_names, base_url=base_url, model=model)
         def do_summary():
-            return generate_summary(api_key, text)
+            return generate_summary(api_key, text, base_url=base_url, model=model)
 
         with ThreadPoolExecutor(max_workers=3) as pool:
             fut_chars = pool.submit(do_characters)
@@ -381,6 +396,7 @@ def run_pipeline():
             script_result = generate_script(
                 api_key, ch["content"], ch["chapter_title"],
                 char_names, mode,
+                base_url=base_url, model=model,
             )
             scenes = script_result.get("scenes", [])
             for scene in scenes:
@@ -546,7 +562,13 @@ def page_results():
             if active_key:
                 with st.spinner("重写中..."):
                     try:
-                        new_content = regenerate_scene(active_key, scene, st.session_state.mode)
+                        provider = st.session_state.get("provider", "doubao")
+                        provider_cfg = PROVIDERS.get(provider, PROVIDERS["doubao"])
+                        new_content = regenerate_scene(
+                            active_key, scene, st.session_state.mode,
+                            base_url=provider_cfg["base_url"],
+                            model=provider_cfg["model"],
+                        )
                         if new_content.get("actions"):
                             st.session_state.all_scenes[selected]["actions"] = new_content["actions"]
                         if new_content.get("dialogues"):
