@@ -60,9 +60,12 @@ def get_builtin_key():
         return ""
 
 def get_active_key():
+    user_key = st.session_state.get("user_api_key", "")
+    if user_key:
+        return user_key
     if trials_remaining() > 0:
         return get_builtin_key()
-    return st.session_state.get("user_api_key", "")
+    return ""
 
 # ── 历史记录 ───────────────────────────────────────────
 def load_history():
@@ -172,14 +175,14 @@ def render_sidebar():
             st.success(f"⚡ 免费试用剩余 **{remaining}/{MAX_FREE_TRIALS}** 次")
         else:
             st.warning("免费次数已用完")
-            user_key = st.text_input(
-                "输入你的 API Key",
-                type="password",
-                value=st.session_state.user_api_key,
-                placeholder="粘贴 API Key...",
-            )
-            if user_key != st.session_state.user_api_key:
-                st.session_state.user_api_key = user_key
+        user_key = st.text_input(
+            "输入你的 API Key（可选，优先使用）",
+            type="password",
+            value=st.session_state.user_api_key,
+            placeholder="粘贴 API Key...",
+        )
+        if user_key != st.session_state.user_api_key:
+            st.session_state.user_api_key = user_key
 
         st.markdown("---")
 
