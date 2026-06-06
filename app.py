@@ -360,7 +360,10 @@ def run_pipeline():
         with ThreadPoolExecutor(max_workers=3) as pool:
             fut_chars = pool.submit(do_characters)
             fut_summary = pool.submit(do_summary)
-            char_result = fut_chars.result()
+            try:
+                char_result = fut_chars.result()
+            except Exception as e:
+                raise Exception(f"人物提取失败，请检查 API Key 是否有效: {e}")
             characters = char_result.get("characters", [])
             st.session_state.characters = characters
             char_names = [c.get("name", "") for c in characters if c.get("name")]
@@ -422,7 +425,11 @@ def run_pipeline():
         st.rerun()
 
     except Exception as e:
-        status_area.error(f"处理出错: {e}")
+        import traceback
+        status_area.empty()
+        st.error(f"处理出错: {e}")
+        with st.expander("🔍 错误详情"):
+            st.code(traceback.format_exc())
         logger.exception("Pipeline error")
         st.session_state.processing = False
 
