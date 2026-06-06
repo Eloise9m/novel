@@ -204,7 +204,12 @@ def render_sidebar():
         if st.session_state.novel_text and not st.session_state.processing:
             if st.button("🚀 生成剧本", type="primary", use_container_width=True):
                 active_key = get_active_key()
-                if active_key:
+                if not active_key:
+                    if trials_remaining() <= 0:
+                        st.error("免费次数已用完，请在侧边栏输入你的 API Key")
+                    else:
+                        st.error("API Key 未配置，请联系管理员")
+                else:
                     run_pipeline()
         elif st.session_state.processing:
             st.button("⏳ 生成中...", disabled=True, use_container_width=True)
@@ -246,7 +251,12 @@ def page_home():
     if st.session_state.get("trigger_generate") and st.session_state.novel_text:
         st.session_state.trigger_generate = False
         active_key = get_active_key()
-        if active_key:
+        if not active_key:
+            if trials_remaining() <= 0:
+                st.error("免费次数已用完，请在侧边栏输入你的 API Key")
+            else:
+                st.error("API Key 未配置，请联系管理员")
+        else:
             run_pipeline()
 
     # 未加载小说
