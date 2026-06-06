@@ -7,6 +7,9 @@
 👉 **[点击这里打开](https://eloise9m-novel-app-bg234h.streamlit.app/)**
 
 打开浏览器就能用，无需安装任何东西。
+视频demo
+通过网盘分享的文件：20260606114444-AI Novel To Script · Streamlit - Google Chrome-视频-1.mp4
+链接: https://pan.baidu.com/s/1zhvjLK6cd5kSYyZKpBrC7w?pwd=wspj 提取码: wspj
 
 ## 功能
 
