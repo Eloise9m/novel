@@ -65,7 +65,9 @@ def get_active_key():
     if user_key:
         return user_key
     if trials_remaining() > 0:
-        return get_builtin_key()
+        builtin = get_builtin_key()
+        if builtin:
+            return builtin
     return ""
 
 # ── 历史记录 ───────────────────────────────────────────
@@ -173,10 +175,11 @@ def render_sidebar():
         st.markdown("---")
 
         remaining = trials_remaining()
-        if remaining > 0:
+        has_builtin = bool(get_builtin_key())
+        if remaining > 0 and has_builtin:
             st.success(f"⚡ 免费试用剩余 **{remaining}/{MAX_FREE_TRIALS}** 次")
-        else:
-            st.warning("免费次数已用完")
+        elif not has_builtin:
+            st.info("🔑 请输入你的 API Key")
         user_key = st.text_input(
             "输入你的 API Key（可选，优先使用）",
             type="password",
@@ -219,10 +222,7 @@ def render_sidebar():
             if st.button("🚀 生成剧本", type="primary", use_container_width=True):
                 active_key = get_active_key()
                 if not active_key:
-                    if trials_remaining() <= 0:
-                        st.error("免费次数已用完，请在侧边栏输入你的 API Key")
-                    else:
-                        st.error("API Key 未配置，请联系管理员")
+                    st.error("请在侧边栏输入你的 API Key")
                 else:
                     run_pipeline()
         elif st.session_state.processing:
@@ -266,10 +266,7 @@ def page_home():
         st.session_state.trigger_generate = False
         active_key = get_active_key()
         if not active_key:
-            if trials_remaining() <= 0:
-                st.error("免费次数已用完，请在侧边栏输入你的 API Key")
-            else:
-                st.error("API Key 未配置，请联系管理员")
+            st.error("请在侧边栏输入你的 API Key")
         else:
             run_pipeline()
 
